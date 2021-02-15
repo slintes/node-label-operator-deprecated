@@ -2,6 +2,11 @@ domain: label.slintes.net
 layout: go.kubebuilder.io/v3
 projectName: tmp
 repo: github.com/slintes/node-label-operator
+resources:
+- crdVersion: v1
+  group: slintes.net
+  kind: Labels
+  version: v1beta1
 version: 3-alpha
 plugins:
   manifests.sdk.operatorframework.io/v2: {}
