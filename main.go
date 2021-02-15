@@ -86,6 +86,10 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Labels")
 		os.Exit(1)
 	}
+	if err = (&slintesnetv1beta1.Labels{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "Labels")
+		os.Exit(1)
+	}
 	// +kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("health", healthz.Ping); err != nil {
