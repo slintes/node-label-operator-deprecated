@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	"github.com/slintes/node-label-operator/api"
 	slintesnetv1beta1 "github.com/slintes/node-label-operator/api/v1beta1"
 	"github.com/slintes/node-label-operator/controllers"
 	// +kubebuilder:scaffold:imports
@@ -86,10 +87,10 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Labels")
 		os.Exit(1)
 	}
-	if err = (&slintesnetv1beta1.Labels{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "Labels")
-		os.Exit(1)
-	}
+
+	// setup node webhook
+	(&api.NodeLabeler{}).SetupWebhookWithManager(mgr)
+
 	// +kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("health", healthz.Ping); err != nil {

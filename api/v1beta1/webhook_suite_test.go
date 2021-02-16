@@ -38,6 +38,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	"github.com/slintes/node-label-operator/api"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -99,8 +101,7 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).NotTo(HaveOccurred())
 
-	err = (&Labels{}).SetupWebhookWithManager(mgr)
-	Expect(err).NotTo(HaveOccurred())
+	(&api.NodeLabeler{}).SetupWebhookWithManager(mgr)
 
 	// +kubebuilder:scaffold:webhook
 

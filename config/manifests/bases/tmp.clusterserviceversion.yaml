@@ -1,0 +1,45 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: '[]'
+    capabilities: Basic Install
+  name: tmp.v0.0.0
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - description: Labels is the Schema for the labels API
+      displayName: Labels
+      kind: Labels
+      name: labels.slintes.net.label.slintes.net
+      version: v1beta1
+  description: na
+  displayName: Node Label Operator
+  icon:
+  - base64data: ""
+    mediatype: ""
+  install:
+    spec:
+      deployments: null
+    strategy: ""
+  installModes:
+  - supported: false
+    type: OwnNamespace
+  - supported: false
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  keywords:
+  - na
+  links:
+  - name: Tmp
+    url: https://tmp.domain
+  maturity: alpha
+  provider:
+    name: na
+    url: na
+  version: 0.0.0
