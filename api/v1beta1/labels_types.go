@@ -28,8 +28,16 @@ type LabelsSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of Labels. Edit Labels_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// Rules defines a list of rules
+	Rules []Rule `json:"rules"`
+}
+
+type Rule struct {
+	// NodeNames defines a list of node name patterns for which the given labels should be set
+	NodeNamePattern []string `json:"nodeName"`
+
+	// Label defines the labels which should be set if one of the node name patterns matches
+	Label []string `json:"label"`
 }
 
 // LabelsStatus defines the observed state of Labels
