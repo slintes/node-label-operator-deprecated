@@ -1,12 +1,10 @@
 apiVersion: slintes.net.label.slintes.net/v1beta1
 kind: Labels
 metadata:
-  name: labels-sample
+  name: labels-sample2
 spec:
   rules:
     - nodeNamePatterns:
         - worker-0
       labels:
-        - test.slintes.net/foo1=bar1
-        - test.slintes.net/foo2=bar2
-        - test.slintes.net/foo3=bar3
+        - test.slintes.net/fooOther=barOther

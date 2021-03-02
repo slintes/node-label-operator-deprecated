@@ -27,24 +27,3 @@ webhooks:
     resources:
     - nodes
   sideEffects: None
-- admissionReviewVersions:
-  - v1
-  - v1beta1
-  clientConfig:
-    service:
-      name: webhook-service
-      namespace: system
-      path: /mutate-slintes-net-label-slintes-net-v1beta1-labels
-  failurePolicy: Fail
-  name: mlabels.kb.io
-  rules:
-  - apiGroups:
-    - slintes.net.label.slintes.net
-    apiVersions:
-    - v1beta1
-    operations:
-    - CREATE
-    - UPDATE
-    resources:
-    - labels
-  sideEffects: None

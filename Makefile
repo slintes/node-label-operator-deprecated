@@ -134,3 +134,12 @@ bundle: manifests kustomize
 .PHONY: bundle-build
 bundle-build:
 	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
+
+# Push the bundle image.
+.PHONY: bundle-push
+bundle-push:
+	docker push $(BUNDLE_IMG)
+
+# Build and push bundle and operator
+.PHONY: docker-all
+docker-all: bundle bundle-build bundle-push docker-build docker-push

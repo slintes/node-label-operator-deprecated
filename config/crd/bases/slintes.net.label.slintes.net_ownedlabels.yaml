@@ -6,20 +6,22 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.4.1
   creationTimestamp: null
-  name: labels.slintes.net.label.slintes.net
+  name: ownedlabels.slintes.net.label.slintes.net
 spec:
   group: slintes.net.label.slintes.net
   names:
-    kind: Labels
-    listKind: LabelsList
-    plural: labels
-    singular: labels
+    kind: OwnedLabels
+    listKind: OwnedLabelsList
+    plural: ownedlabels
+    singular: ownedlabels
   scope: Namespaced
   versions:
   - name: v1beta1
     schema:
       openAPIV3Schema:
-        description: Labels is the Schema for the labels API
+        description: OwnedLabels is the Schema for the ownedlabels API They define
+          which node labels are owned by this operator and can be removed in case
+          no label rule matches
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -34,35 +36,23 @@ spec:
           metadata:
             type: object
           spec:
-            description: LabelsSpec defines the desired state of Labels
+            description: OwnedLabelsSpec defines the desired state of OwnedLabels
             properties:
-              rules:
-                description: Rules defines a list of rules
-                items:
-                  properties:
-                    labels:
-                      description: Label defines the labels which should be set if
-                        one of the node name patterns matches Format of label must
-                        be domain/name=value
-                      items:
-                        type: string
-                      type: array
-                    nodeNamePatterns:
-                      description: NodeNames defines a list of node name patterns
-                        for which the given labels should be set
-                      items:
-                        type: string
-                      type: array
-                  required:
-                  - labels
-                  - nodeNamePatterns
-                  type: object
-                type: array
-            required:
-            - rules
+              domain:
+                description: Domain defines the label domain which is owned by this
+                  operator If a node label - matches this domain AND - matches the
+                  namePattern if given AND - no label rule matches then the label
+                  will be removed
+                type: string
+              namePattern:
+                description: NamePattern defines the label name pattern which is owned
+                  by this operator If a node label - matches this name pattern AND
+                  - matches the domain if given AND - no label rule matches then the
+                  label will be removed
+                type: string
             type: object
           status:
-            description: LabelsStatus defines the observed state of Labels
+            description: OwnedLabelsStatus defines the observed state of OwnedLabels
             type: object
         type: object
     served: true

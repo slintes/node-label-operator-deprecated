@@ -7,6 +7,16 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - nodes
+  verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - slintes.net.label.slintes.net
   resources:
   - labels
@@ -28,6 +38,32 @@ rules:
   - slintes.net.label.slintes.net
   resources:
   - labels/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - slintes.net.label.slintes.net
+  resources:
+  - ownedlabels
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - slintes.net.label.slintes.net
+  resources:
+  - ownedlabels/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - slintes.net.label.slintes.net
+  resources:
+  - ownedlabels/status
   verbs:
   - get
   - patch

@@ -14,12 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta1
+package api
 
 import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"github.com/slintes/node-label-operator/api/v1beta1"
 	"net"
 	"path/filepath"
 	"testing"
@@ -38,8 +39,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-
-	"github.com/slintes/node-label-operator/api"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -66,9 +65,9 @@ var _ = BeforeSuite(func() {
 
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
-		CRDDirectoryPaths: []string{filepath.Join("..", "..", "config", "crd", "bases")},
+		CRDDirectoryPaths: []string{filepath.Join("..", "config", "crd", "bases")},
 		WebhookInstallOptions: envtest.WebhookInstallOptions{
-			Paths: []string{filepath.Join("..", "..", "config", "webhook")},
+			Paths: []string{filepath.Join("..", "config", "webhook")},
 		},
 	}
 
@@ -77,7 +76,7 @@ var _ = BeforeSuite(func() {
 	Expect(cfg).NotTo(BeNil())
 
 	scheme := runtime.NewScheme()
-	err = AddToScheme(scheme)
+	err = v1beta1.AddToScheme(scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	err = admissionv1beta1.AddToScheme(scheme)
@@ -101,7 +100,7 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).NotTo(HaveOccurred())
 
-	(&api.NodeLabeler{}).SetupWebhookWithManager(mgr)
+	(&NodeLabeler{}).SetupWebhookWithManager(mgr)
 
 	// +kubebuilder:scaffold:webhook
 

@@ -11,7 +11,26 @@ metadata:
             "name": "labels-sample"
           },
           "spec": {
-            "foo": "bar"
+            "rules": [
+              {
+                "labels": [
+                  "test.slintes.net/foo=bar"
+                ],
+                "nodeNamePatterns": [
+                  "worker-0"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "apiVersion": "slintes.net.label.slintes.net/v1beta1",
+          "kind": "OwnedLabels",
+          "metadata": {
+            "name": "ownedlabels-sample"
+          },
+          "spec": {
+            "domain": "test.slintes.net"
           }
         }
       ]
@@ -29,6 +48,11 @@ spec:
       kind: Labels
       name: labels.slintes.net.label.slintes.net
       version: v1beta1
+    - description: OwnedLabels is the Schema for the ownedlabels API They define which node labels are owned by this operator and can be removed in case no label rule matches
+      displayName: Owned Labels
+      kind: OwnedLabels
+      name: ownedlabels.slintes.net.label.slintes.net
+      version: v1beta1
   description: na
   displayName: Node Label Operator
   icon:
@@ -38,6 +62,16 @@ spec:
     spec:
       clusterPermissions:
       - rules:
+        - apiGroups:
+          - ""
+          resources:
+          - nodes
+          verbs:
+          - get
+          - list
+          - patch
+          - update
+          - watch
         - apiGroups:
           - slintes.net.label.slintes.net
           resources:
@@ -60,6 +94,32 @@ spec:
           - slintes.net.label.slintes.net
           resources:
           - labels/status
+          verbs:
+          - get
+          - patch
+          - update
+        - apiGroups:
+          - slintes.net.label.slintes.net
+          resources:
+          - ownedlabels
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
+          - slintes.net.label.slintes.net
+          resources:
+          - ownedlabels/finalizers
+          verbs:
+          - update
+        - apiGroups:
+          - slintes.net.label.slintes.net
+          resources:
+          - ownedlabels/status
           verbs:
           - get
           - patch
@@ -140,7 +200,7 @@ spec:
                   name: cert
                   readOnly: true
               securityContext:
-                runAsUser: 1000580000
+                runAsNonRoot: true
               terminationGracePeriodSeconds: 10
               volumes:
               - name: cert
@@ -213,24 +273,3 @@ spec:
     targetPort: 9443
     type: MutatingAdmissionWebhook
     webhookPath: /label-v1-nodes
-  - admissionReviewVersions:
-    - v1
-    - v1beta1
-    containerPort: 443
-    deploymentName: tmp-controller-manager
-    failurePolicy: Fail
-    generateName: mlabels.kb.io
-    rules:
-    - apiGroups:
-      - slintes.net.label.slintes.net
-      apiVersions:
-      - v1beta1
-      operations:
-      - CREATE
-      - UPDATE
-      resources:
-      - labels
-    sideEffects: None
-    targetPort: 9443
-    type: MutatingAdmissionWebhook
-    webhookPath: /mutate-slintes-net-label-slintes-net-v1beta1-labels

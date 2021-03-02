@@ -18,8 +18,9 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
+	"regexp"
+	"strings"
 
 	v1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -27,11 +28,14 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	"github.com/slintes/node-label-operator/api/v1beta1"
 )
 
 // log is for logging in this package.
 var nodelog = logf.Log.WithName("nodes-webhook")
 
+// TODO remove update!!!
 // +kubebuilder:webhook:path=/label-v1-nodes,mutating=true,failurePolicy=ignore,sideEffects=None,groups="",resources=nodes,verbs=create;update,versions=v1,name=mnode.kb.io,admissionReviewVersions={v1,v1beta1}
 
 // NodeLabeler adds labels to Nodes
@@ -47,16 +51,45 @@ func (n *NodeLabeler) Handle(ctx context.Context, req admission.Request) admissi
 	node := &v1.Node{}
 	err := n.decoder.Decode(req, node)
 	if err != nil {
+		nodelog.Error(err, "Failed to decode node")
 		return admission.Errored(http.StatusBadRequest, err)
 	}
-
-	nodelog.Info("node is decoded", "node", fmt.Sprintf("%+v", node))
 
 	if node.Labels == nil {
 		node.Labels = map[string]string{}
 	}
-	node.Labels["my-node-webhook"] = "works"
 
+	// get all label rules and apply labels as they match
+	newLabels := &v1beta1.LabelsList{}
+	if n.Client.List(context.TODO(), newLabels, &client.ListOptions{}); err != nil {
+		nodelog.Error(err, "Failed to list Labels")
+		return admission.Errored(http.StatusBadRequest, err)
+	}
+	for _, newLabel := range newLabels.Items {
+		for _, rule := range newLabel.Spec.Rules {
+			for _, nodeNamePattern := range rule.NodeNamePatterns {
+				match, err := regexp.MatchString(nodeNamePattern, node.Name)
+				if err != nil {
+					nodelog.Error(err, "invalid regular expression, moving on to next node name / rule")
+					continue
+				}
+				if !match {
+					continue
+				}
+				// we have a match, add labels!
+				for _, label := range rule.Labels {
+					// split to domain/name and value
+					parts := strings.Split(label, "=")
+					if len(parts) != 2 {
+						nodelog.Info("invalid label, less or more than one \"=\", moving on to next label / rule", "label", label)
+						continue
+					}
+					nodelog.Info("adding label to node based on pattern", "label", label, "nodeName", node.Name, "pattern", nodeNamePattern)
+					node.Labels[parts[0]] = parts[1]
+				}
+			}
+		}
+	}
 	marshaledNode, err := json.Marshal(node)
 	if err != nil {
 		nodelog.Error(err, "marshalling response went wrong")
