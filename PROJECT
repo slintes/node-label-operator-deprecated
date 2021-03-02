@@ -8,6 +8,10 @@ resources:
   kind: Labels
   version: v1beta1
   webhookVersion: v1
+- crdVersion: v1
+  group: slintes.net
+  kind: OwnedLabels
+  version: v1beta1
 version: 3-alpha
 plugins:
   manifests.sdk.operatorframework.io/v2: {}

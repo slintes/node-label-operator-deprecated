@@ -91,6 +91,14 @@ func main() {
 	// setup node webhook
 	(&api.NodeLabeler{}).SetupWebhookWithManager(mgr)
 
+	if err = (&controllers.OwnedLabelsReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("OwnedLabels"),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "OwnedLabels")
+		os.Exit(1)
+	}
 	// +kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("health", healthz.Ping); err != nil {
