@@ -36,8 +36,7 @@ import (
 // log is for logging in this package.
 var nodelog = logf.Log.WithName("nodes-webhook")
 
-// TODO remove update!!!
-// +kubebuilder:webhook:path=/label-v1-nodes,mutating=true,failurePolicy=ignore,sideEffects=None,groups="",resources=nodes,verbs=create;update,versions=v1,name=mnode.kb.io,admissionReviewVersions={v1,v1beta1}
+// +kubebuilder:webhook:path=/label-v1-nodes,mutating=true,failurePolicy=ignore,sideEffects=None,groups="",resources=nodes,verbs=create,versions=v1,name=mnode.kb.io,admissionReviewVersions={v1,v1beta1}
 
 // NodeLabeler adds labels to Nodes
 type NodeLabeler struct {
