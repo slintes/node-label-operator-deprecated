@@ -60,6 +60,8 @@ type LabelsReconciler struct {
 func (r *LabelsReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("labels", req.NamespacedName)
 
+	log.Info("Reconciling")
+
 	// get Labels instance
 	labels := &slintesnetv1beta1.Labels{}
 	err := r.Get(ctx, req.NamespacedName, labels)
@@ -115,7 +117,7 @@ func (r *LabelsReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	// and start
-	for i, nodeOrig := range nodes.Items {
+	for _, nodeOrig := range nodes.Items {
 
 		log.Info("checking node", "nodeName", nodeOrig.Name)
 
@@ -236,7 +238,10 @@ func (r *LabelsReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 						}
 						if val, ok := node.Labels[parts[0]]; !ok || val != parts[1] {
 							log.Info("adding label to node based on pattern", "label", label, "nodeName", node.Name, "pattern", nodeNamePattern)
-							nodes.Items[i].Labels[parts[0]] = parts[1]
+							if node.Labels == nil {
+								node.Labels = map[string]string{}
+							}
+							node.Labels[parts[0]] = parts[1]
 							nodeModified = true
 						}
 					}
@@ -247,7 +252,7 @@ func (r *LabelsReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		// save node
 		if nodeModified {
 			log.Info("patching node")
-			baseToPatch := client.MergeFrom(&nodes.Items[i])
+			baseToPatch := client.MergeFrom(&nodeOrig)
 			if err := r.Client.Patch(context.TODO(), node, baseToPatch); err != nil {
 				log.Error(err, "Failed to patch Node")
 				return ctrl.Result{}, err
