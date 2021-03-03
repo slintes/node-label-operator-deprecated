@@ -229,9 +229,11 @@ func (r *LabelsReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 							log.Info("invalid label, less or more than one \"=\", moving on to next rule", "label", label)
 							continue
 						}
-						log.Info("adding label to node based on pattern", "label", label, "nodeName", node.Name, "pattern", nodeNamePattern)
-						nodes.Items[i].Labels[parts[0]] = parts[1]
-						nodeModified = true
+						if val, ok := node.Labels[parts[0]]; !ok || val != parts[1] {
+							log.Info("adding label to node based on pattern", "label", label, "nodeName", node.Name, "pattern", nodeNamePattern)
+							nodes.Items[i].Labels[parts[0]] = parts[1]
+							nodeModified = true
+						}
 					}
 				}
 			}

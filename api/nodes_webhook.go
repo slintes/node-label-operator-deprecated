@@ -89,8 +89,10 @@ func (n *NodeLabeler) Handle(ctx context.Context, req admission.Request) admissi
 						nodelog.Info("invalid label, less or more than one \"=\", moving on to next label / rule", "label", label)
 						continue
 					}
-					nodelog.Info("adding label to node based on pattern", "label", label, "nodeName", node.Name, "pattern", nodeNamePattern)
-					node.Labels[parts[0]] = parts[1]
+					if val, ok := node.Labels[parts[0]]; !ok || val != parts[1] {
+						nodelog.Info("adding label to node based on pattern", "label", label, "nodeName", node.Name, "pattern", nodeNamePattern)
+						node.Labels[parts[0]] = parts[1]
+					}
 				}
 			}
 		}
