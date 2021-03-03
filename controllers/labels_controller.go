@@ -95,21 +95,21 @@ func (r *LabelsReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	// we need all Labels
 	allLabels := &slintesnetv1beta1.LabelsList{}
-	if r.Client.List(context.TODO(), allLabels, &client.ListOptions{}); err != nil {
+	if err = r.Client.List(context.TODO(), allLabels, &client.ListOptions{}); err != nil {
 		log.Error(err, "Failed to list Labels")
 		return ctrl.Result{}, err
 	}
 
 	// and OwnedLabels
 	ownedLabels := &slintesnetv1beta1.OwnedLabelsList{}
-	if r.Client.List(context.TODO(), ownedLabels, &client.ListOptions{}); err != nil {
+	if err = r.Client.List(context.TODO(), ownedLabels, &client.ListOptions{}); err != nil {
 		log.Error(err, "Failed to list OwnedLabels")
 		return ctrl.Result{}, err
 	}
 
 	// get nodes
 	nodes := &v1.NodeList{}
-	if r.Client.List(context.TODO(), nodes, &client.ListOptions{}); err != nil {
+	if err = r.Client.List(context.TODO(), nodes, &client.ListOptions{}); err != nil {
 		log.Error(err, "Failed to list Nodes")
 		return ctrl.Result{}, err
 	}

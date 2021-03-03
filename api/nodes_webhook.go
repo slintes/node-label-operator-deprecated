@@ -61,7 +61,7 @@ func (n *NodeLabeler) Handle(ctx context.Context, req admission.Request) admissi
 
 	// get all label rules and apply labels as they match
 	newLabels := &v1beta1.LabelsList{}
-	if n.Client.List(context.TODO(), newLabels, &client.ListOptions{}); err != nil {
+	if err = n.Client.List(context.TODO(), newLabels, &client.ListOptions{}); err != nil {
 		nodelog.Error(err, "Failed to list Labels")
 		return admission.Errored(http.StatusBadRequest, err)
 	}
