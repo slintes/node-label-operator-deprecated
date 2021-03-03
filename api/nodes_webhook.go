@@ -66,6 +66,11 @@ func (n *NodeLabeler) Handle(ctx context.Context, req admission.Request) admissi
 		return admission.Errored(http.StatusBadRequest, err)
 	}
 	for _, newLabel := range newLabels.Items {
+
+		if newLabel.GetDeletionTimestamp() != nil {
+			continue
+		}
+
 		for _, rule := range newLabel.Spec.Rules {
 			for _, nodeNamePattern := range rule.NodeNamePatterns {
 				match, err := regexp.MatchString(nodeNamePattern, node.Name)

@@ -21,6 +21,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"regexp"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"strings"
 
 	"github.com/go-logr/logr"
@@ -30,6 +31,8 @@ import (
 
 	slintesnetv1beta1 "github.com/slintes/node-label-operator/api/v1beta1"
 )
+
+const labelsFinalizer = "labels.slintes.net/finalizer"
 
 // LabelsReconciler reconciles a Labels object
 type LabelsReconciler struct {
@@ -57,17 +60,28 @@ func (r *LabelsReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	// get Labels instance
 	labels := &slintesnetv1beta1.Labels{}
-	labelsDeleted := false
 	err := r.Get(ctx, req.NamespacedName, labels)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
-			log.Info("Labels resource not found, will delete owned labels.")
-			labelsDeleted = true
-		} else {
-			// Error reading the object - requeue the request.
-			log.Error(err, "Failed to get Labels")
+			log.Info("Labels resource not found, ignoring because it must be deleted")
+			return ctrl.Result{}, nil
+		}
+		// Error reading the object - requeue the request.
+		log.Error(err, "Failed to get Labels")
+		return ctrl.Result{}, err
+	}
+
+	markedForDeletion := labels.GetDeletionTimestamp() != nil
+
+	// add finalizer
+	if !markedForDeletion && !controllerutil.ContainsFinalizer(labels, labelsFinalizer) {
+		log.Info("adding finalizer")
+		controllerutil.AddFinalizer(labels, labelsFinalizer)
+		err = r.Update(ctx, labels)
+		if err != nil {
+			log.Error(err, "Failed to add finalizer")
 			return ctrl.Result{}, err
 		}
 	}
@@ -147,6 +161,11 @@ func (r *LabelsReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 				labelCovered := false
 			CoveredLoop:
 				for _, rules := range allLabels.Items {
+
+					if rules.GetDeletionTimestamp() != nil {
+						continue
+					}
+
 					for _, rule := range rules.Spec.Rules {
 						for _, ruleLabel := range rule.Labels {
 							// split to domain/name and value
@@ -190,8 +209,8 @@ func (r *LabelsReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		}
 
 		// owned labels are removed now on this node
-		// add new labels
-		if !labelsDeleted {
+		// add new / modified labels
+		if !markedForDeletion {
 			for _, rule := range labels.Spec.Rules {
 				for _, nodeNamePattern := range rule.NodeNamePatterns {
 					match, err := regexp.MatchString(nodeNamePattern, node.Name)
@@ -220,11 +239,23 @@ func (r *LabelsReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 		// save node
 		if nodeModified {
+			log.Info("patching node")
 			baseToPatch := client.MergeFrom(&nodes.Items[i])
 			if err := r.Client.Patch(context.TODO(), node, baseToPatch); err != nil {
 				log.Error(err, "Failed to patch Node")
 				return ctrl.Result{}, err
 			}
+		}
+
+	}
+
+	// remove finalizer
+	if markedForDeletion {
+		log.Info("removing finalizer")
+		controllerutil.RemoveFinalizer(labels, labelsFinalizer)
+		err := r.Update(ctx, labels)
+		if err != nil {
+			return ctrl.Result{}, err
 		}
 	}
 
