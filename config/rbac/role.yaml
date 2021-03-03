@@ -17,7 +17,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - slintes.net.label.slintes.net
+  - labels.slintes.net
   resources:
   - labels
   verbs:
@@ -29,13 +29,13 @@ rules:
   - update
   - watch
 - apiGroups:
-  - slintes.net.label.slintes.net
+  - labels.slintes.net
   resources:
   - labels/finalizers
   verbs:
   - update
 - apiGroups:
-  - slintes.net.label.slintes.net
+  - labels.slintes.net
   resources:
   - labels/status
   verbs:
@@ -43,7 +43,7 @@ rules:
   - patch
   - update
 - apiGroups:
-  - slintes.net.label.slintes.net
+  - labels.slintes.net
   resources:
   - ownedlabels
   verbs:
@@ -55,13 +55,13 @@ rules:
   - update
   - watch
 - apiGroups:
-  - slintes.net.label.slintes.net
+  - labels.slintes.net
   resources:
   - ownedlabels/finalizers
   verbs:
   - update
 - apiGroups:
-  - slintes.net.label.slintes.net
+  - labels.slintes.net
   resources:
   - ownedlabels/status
   verbs:

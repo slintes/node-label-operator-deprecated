@@ -6,9 +6,9 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.4.1
   creationTimestamp: null
-  name: ownedlabels.slintes.net.label.slintes.net
+  name: ownedlabels.labels.slintes.net
 spec:
-  group: slintes.net.label.slintes.net
+  group: labels.slintes.net
   names:
     kind: OwnedLabels
     listKind: OwnedLabelsList

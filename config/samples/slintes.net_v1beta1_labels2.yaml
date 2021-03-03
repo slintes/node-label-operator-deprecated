@@ -1,4 +1,4 @@
-apiVersion: slintes.net.label.slintes.net/v1beta1
+apiVersion: labels.slintes.net/v1beta1
 kind: Labels
 metadata:
   name: labels-sample2

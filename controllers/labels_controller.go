@@ -43,9 +43,9 @@ type LabelsReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-// +kubebuilder:rbac:groups=slintes.net.label.slintes.net,resources=labels,verbs=get;list;watch;create;update;patch;delete
-// +kubebuilder:rbac:groups=slintes.net.label.slintes.net,resources=labels/status,verbs=get;update;patch
-// +kubebuilder:rbac:groups=slintes.net.label.slintes.net,resources=labels/finalizers,verbs=update
+// +kubebuilder:rbac:groups=labels.slintes.net,resources=labels,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=labels.slintes.net,resources=labels/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=labels.slintes.net,resources=labels/finalizers,verbs=update
 // +kubebuilder:rbac:groups=core,resources=nodes,verbs=get;list;watch;update;patch
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
