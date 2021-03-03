@@ -33,7 +33,8 @@ type LabelsSpec struct {
 }
 
 type Rule struct {
-	// NodeNames defines a list of node name patterns for which the given labels should be set
+	// NodeNames defines a list of node name patterns for which the given labels should be set.
+	// String start and end anchors (^/$) will be added automatically
 	NodeNamePatterns []string `json:"nodeNamePatterns"`
 
 	// Label defines the labels which should be set if one of the node name patterns matches

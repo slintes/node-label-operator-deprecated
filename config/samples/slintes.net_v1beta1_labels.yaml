@@ -5,7 +5,7 @@ metadata:
 spec:
   rules:
     - nodeNamePatterns:
-        - worker-0
+        - worker-0.*
       labels:
         - test.slintes.net/foo1=bar1
         - test.slintes.net/foo2=bar2

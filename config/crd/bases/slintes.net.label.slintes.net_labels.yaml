@@ -49,7 +49,8 @@ spec:
                       type: array
                     nodeNamePatterns:
                       description: NodeNames defines a list of node name patterns
-                        for which the given labels should be set
+                        for which the given labels should be set. String start and
+                        end anchors (^/$) will be added automatically
                       items:
                         type: string
                       type: array

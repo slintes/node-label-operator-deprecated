@@ -48,7 +48,8 @@ spec:
                 description: NamePattern defines the label name pattern which is owned
                   by this operator If a node label - matches this name pattern AND
                   - matches the domain if given AND - no label rule matches then the
-                  label will be removed
+                  label will be removed String start and end anchors (^/$) will be
+                  added automatically
                 type: string
             type: object
           status:

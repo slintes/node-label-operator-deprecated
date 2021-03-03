@@ -18,6 +18,7 @@ package api
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
@@ -73,7 +74,8 @@ func (n *NodeLabeler) Handle(ctx context.Context, req admission.Request) admissi
 
 		for _, rule := range newLabel.Spec.Rules {
 			for _, nodeNamePattern := range rule.NodeNamePatterns {
-				match, err := regexp.MatchString(nodeNamePattern, node.Name)
+				pattern := fmt.Sprintf("%s%s%s", "^", nodeNamePattern, "$")
+				match, err := regexp.MatchString(pattern, node.Name)
 				if err != nil {
 					nodelog.Error(err, "invalid regular expression, moving on to next node name / rule")
 					continue

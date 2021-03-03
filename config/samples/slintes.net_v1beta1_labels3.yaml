@@ -1,0 +1,10 @@
+apiVersion: slintes.net.label.slintes.net/v1beta1
+kind: Labels
+metadata:
+  name: labels-sample3
+spec:
+  rules:
+    - nodeNamePatterns:
+        - dummy
+      labels:
+        - test.slintes.net/fooDummy=barDummy

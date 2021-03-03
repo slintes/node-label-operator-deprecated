@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -118,7 +119,8 @@ func (r *OwnedLabelsReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 				continue
 			}
 			if ownedLabels.Spec.NamePattern != nil {
-				match, err := regexp.MatchString(*ownedLabels.Spec.NamePattern, labelName)
+				pattern := fmt.Sprintf("%s%s%s", "^", *ownedLabels.Spec.NamePattern, "$")
+				match, err := regexp.MatchString(pattern, labelName)
 				if err != nil {
 					log.Error(err, "invalid regular expression, moving on to next owned label", "pattern", ownedLabels.Spec.NamePattern)
 					continue

@@ -18,16 +18,18 @@ package controllers
 
 import (
 	"context"
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	"fmt"
 	"regexp"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"strings"
 
 	"github.com/go-logr/logr"
+
+	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	slintesnetv1beta1 "github.com/slintes/node-label-operator/api/v1beta1"
 )
@@ -142,7 +144,8 @@ func (r *LabelsReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 					continue
 				}
 				if ownedLabel.Spec.NamePattern != nil {
-					match, err := regexp.MatchString(*ownedLabel.Spec.NamePattern, labelName)
+					pattern := fmt.Sprintf("%s%s%s", "^", *ownedLabel.Spec.NamePattern, "$")
+					match, err := regexp.MatchString(pattern, labelName)
 					if err != nil {
 						log.Error(err, "invalid regular expression, moving on to next owned label", "pattern", ownedLabel.Spec.NamePattern)
 						continue
@@ -180,7 +183,8 @@ func (r *LabelsReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 								// label matches... does the node?
 								for _, nodeNamePattern := range rule.NodeNamePatterns {
-									match, err := regexp.MatchString(nodeNamePattern, node.Name)
+									pattern := fmt.Sprintf("%s%s%s", "^", nodeNamePattern, "$")
+									match, err := regexp.MatchString(pattern, node.Name)
 									if err != nil {
 										log.Error(err, "invalid regular expression, moving on to next rule")
 										continue
@@ -213,7 +217,8 @@ func (r *LabelsReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		if !markedForDeletion {
 			for _, rule := range labels.Spec.Rules {
 				for _, nodeNamePattern := range rule.NodeNamePatterns {
-					match, err := regexp.MatchString(nodeNamePattern, node.Name)
+					pattern := fmt.Sprintf("%s%s%s", "^", nodeNamePattern, "$")
+					match, err := regexp.MatchString(pattern, node.Name)
 					if err != nil {
 						log.Error(err, "invalid regular expression, moving on to next rule")
 						continue

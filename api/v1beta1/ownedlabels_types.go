@@ -42,6 +42,7 @@ type OwnedLabelsSpec struct {
 	// - matches the domain if given AND
 	// - no label rule matches
 	// then the label will be removed
+	// String start and end anchors (^/$) will be added automatically
 	NamePattern *string `json:"namePattern,omitempty"`
 }
 
