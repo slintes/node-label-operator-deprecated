@@ -18,9 +18,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
-	"regexp"
-	"strings"
 
 	"github.com/go-logr/logr"
 
@@ -31,6 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	slintesnetv1beta1 "github.com/slintes/node-label-operator/api/v1beta1"
+	"github.com/slintes/node-label-operator/pkg"
 )
 
 // OwnedLabelsReconciler reconciles a OwnedLabels object
@@ -96,94 +94,7 @@ func (r *OwnedLabelsReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		log.Info("checking node", "nodeName", nodeOrig.Name)
 
 		node := nodeOrig.DeepCopy()
-		nodeModified := false
-
-		// check if we have owned allOwnedLabels on the node
-		log.Info("checking owned labels")
-		for labelDomainName, labelValue := range node.Labels {
-			// split domainName
-			parts := strings.Split(labelDomainName, "/")
-			if len(parts) != 2 {
-				// this should not happen...
-				log.Info("Skipping unexpected label name on node", "labelName", labelDomainName, "node", node.Name)
-				continue
-			}
-			labelDomain := parts[0]
-			labelName := parts[1]
-
-			// check if we own this label
-			log.Info("checking owned label", "label", ownedLabels.Spec)
-			if ownedLabels.Spec.Domain != nil && *ownedLabels.Spec.Domain != labelDomain {
-				// domain set but doesn't match, move on
-				log.Info("  domain does not match", "nodeDomain", labelDomain, "ownedDomain", ownedLabels.Spec.Domain)
-				continue
-			}
-			if ownedLabels.Spec.NamePattern != nil {
-				pattern := fmt.Sprintf("%s%s%s", "^", *ownedLabels.Spec.NamePattern, "$")
-				match, err := regexp.MatchString(pattern, labelName)
-				if err != nil {
-					log.Error(err, "invalid regular expression, moving on to next owned label", "pattern", ownedLabels.Spec.NamePattern)
-					continue
-				}
-				if !match {
-					// name pattern set but doesn't match, move on
-					log.Info("  name pattern does not match")
-					continue
-				}
-			}
-
-			log.Info("  we own it! checking rules")
-
-			// we own this label
-			// check if it is still covered by a label rule
-			labelCovered := false
-		CoveredLoop:
-			for _, rules := range allLabels.Items {
-
-				if rules.GetDeletionTimestamp() != nil {
-					continue
-				}
-
-				for _, rule := range rules.Spec.Rules {
-					for _, ruleLabel := range rule.Labels {
-						// split to domain/name and value
-						parts := strings.Split(ruleLabel, "=")
-						if len(parts) != 2 {
-							log.Info("skipping unexpected rule label", ruleLabel)
-							continue
-						}
-						if parts[0] == labelDomainName && parts[1] == labelValue {
-
-							log.Info("    label matches...")
-
-							// label matches... does the node?
-							for _, nodeNamePattern := range rule.NodeNamePatterns {
-								match, err := regexp.MatchString(nodeNamePattern, node.Name)
-								if err != nil {
-									log.Error(err, "invalid regular expression, moving on to next rule")
-									continue
-								}
-								if match {
-									// label is still valid!
-									// break out of this nested loops
-									log.Info("    and value matches! keeping label")
-									labelCovered = true
-									break CoveredLoop
-								}
-							}
-						}
-					}
-				}
-			}
-			if !labelCovered {
-				// we need to remove the label
-				log.Info("  deleting uncovered owned label!")
-				nodeLabels := node.Labels
-				delete(nodeLabels, labelDomainName)
-				node.Labels = nodeLabels
-				nodeModified = true
-			}
-		}
+		nodeModified := pkg.RemoveOwnedLabels(node, []slintesnetv1beta1.OwnedLabels{*ownedLabels}, allLabels.Items, log)
 
 		// save node
 		if nodeModified {

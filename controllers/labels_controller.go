@@ -18,9 +18,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
-	"regexp"
-	"strings"
 
 	"github.com/go-logr/logr"
 
@@ -32,6 +29,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	slintesnetv1beta1 "github.com/slintes/node-label-operator/api/v1beta1"
+	"github.com/slintes/node-label-operator/pkg"
 )
 
 const labelsFinalizer = "labels.slintes.net/finalizer"
@@ -119,135 +117,14 @@ func (r *LabelsReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	// and start
 	for _, nodeOrig := range nodes.Items {
 
-		log.Info("checking node", "nodeName", nodeOrig.Name)
+		log.Info("Processing node", "nodeName", nodeOrig.Name)
 
 		node := nodeOrig.DeepCopy()
-		nodeModified := false
-
-		// check if we have owned labels on the node
-		log.Info("checking owned labels")
-		for labelDomainName, labelValue := range node.Labels {
-			// split domainName
-			parts := strings.Split(labelDomainName, "/")
-			if len(parts) != 2 {
-				// this should not happen...
-				log.Info("Skipping unexpected label name on node", "labelName", labelDomainName, "node", node.Name)
-				continue
-			}
-			labelDomain := parts[0]
-			labelName := parts[1]
-
-			// check if we own this label
-			for _, ownedLabel := range ownedLabels.Items {
-				log.Info("checking owned label", "label", ownedLabel.Spec)
-				if ownedLabel.Spec.Domain != nil && *ownedLabel.Spec.Domain != labelDomain {
-					// domain set but doesn't match, move on
-					log.Info("  domain does not match", "nodeDomain", labelDomain, "ownedDomain", ownedLabel.Spec.Domain)
-					continue
-				}
-				if ownedLabel.Spec.NamePattern != nil {
-					pattern := fmt.Sprintf("%s%s%s", "^", *ownedLabel.Spec.NamePattern, "$")
-					match, err := regexp.MatchString(pattern, labelName)
-					if err != nil {
-						log.Error(err, "invalid regular expression, moving on to next owned label", "pattern", ownedLabel.Spec.NamePattern)
-						continue
-					}
-					if !match {
-						// name pattern set but doesn't match, move on
-						log.Info("  name pattern does not match")
-						continue
-					}
-				}
-
-				log.Info("  we own it! checking rules")
-
-				// we own this label
-				// check if it is still covered by a label rule
-				labelCovered := false
-			CoveredLoop:
-				for _, rules := range allLabels.Items {
-
-					if rules.GetDeletionTimestamp() != nil {
-						continue
-					}
-
-					for _, rule := range rules.Spec.Rules {
-						for _, ruleLabel := range rule.Labels {
-							// split to domain/name and value
-							parts := strings.Split(ruleLabel, "=")
-							if len(parts) != 2 {
-								log.Info("skipping unexpected rule label", ruleLabel)
-								continue
-							}
-							if parts[0] == labelDomainName && parts[1] == labelValue {
-
-								log.Info("    label matches...")
-
-								// label matches... does the node?
-								for _, nodeNamePattern := range rule.NodeNamePatterns {
-									pattern := fmt.Sprintf("%s%s%s", "^", nodeNamePattern, "$")
-									match, err := regexp.MatchString(pattern, node.Name)
-									if err != nil {
-										log.Error(err, "invalid regular expression, moving on to next rule")
-										continue
-									}
-									if match {
-										// label is still valid!
-										// break out of this nested loops
-										log.Info("    and value matches! keeping label")
-										labelCovered = true
-										break CoveredLoop
-									}
-								}
-							}
-						}
-					}
-				}
-				if !labelCovered {
-					// we need to remove the label
-					log.Info("  deleting uncovered owned label!")
-					nodeLabels := node.Labels
-					delete(nodeLabels, labelDomainName)
-					node.Labels = nodeLabels
-					nodeModified = true
-				}
-			}
-		}
+		nodeModified := pkg.RemoveOwnedLabels(node, ownedLabels.Items, allLabels.Items, log)
 
 		// owned labels are removed now on this node
 		// add new / modified labels
-		if !markedForDeletion {
-			for _, rule := range labels.Spec.Rules {
-				for _, nodeNamePattern := range rule.NodeNamePatterns {
-					pattern := fmt.Sprintf("%s%s%s", "^", nodeNamePattern, "$")
-					match, err := regexp.MatchString(pattern, node.Name)
-					if err != nil {
-						log.Error(err, "invalid regular expression, moving on to next rule")
-						continue
-					}
-					if !match {
-						continue
-					}
-					// we have a match, add labels!
-					for _, label := range rule.Labels {
-						// split to domain/name and value
-						parts := strings.Split(label, "=")
-						if len(parts) != 2 {
-							log.Info("invalid label, less or more than one \"=\", moving on to next rule", "label", label)
-							continue
-						}
-						if val, ok := node.Labels[parts[0]]; !ok || val != parts[1] {
-							log.Info("adding label to node based on pattern", "label", label, "nodeName", node.Name, "pattern", nodeNamePattern)
-							if node.Labels == nil {
-								node.Labels = map[string]string{}
-							}
-							node.Labels[parts[0]] = parts[1]
-							nodeModified = true
-						}
-					}
-				}
-			}
-		}
+		nodeModified = pkg.AddLabels(node, *labels, log) || nodeModified
 
 		// save node
 		if nodeModified {

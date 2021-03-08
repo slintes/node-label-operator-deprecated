@@ -18,10 +18,7 @@ package api
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"regexp"
-	"strings"
 
 	v1 "k8s.io/api/core/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -31,12 +28,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/slintes/node-label-operator/api/v1beta1"
+	"github.com/slintes/node-label-operator/pkg"
 )
 
-// log is for logging in this package.
-var nodelog = logf.Log.WithName("nodes-webhook")
-
 // +kubebuilder:webhook:path=/label-v1-nodes,mutating=true,failurePolicy=ignore,sideEffects=None,groups="",resources=nodes,verbs=create,versions=v1,name=mnode.kb.io,admissionReviewVersions={v1,v1beta1}
+
+// log is for logging in this package.
+var log = logf.Log.WithName("nodes-webhook")
 
 // NodeLabeler adds labels to Nodes
 type NodeLabeler struct {
@@ -46,65 +44,34 @@ type NodeLabeler struct {
 
 func (n *NodeLabeler) Handle(ctx context.Context, req admission.Request) admission.Response {
 
-	nodelog.Info("node webhook is called!")
+	log.Info("node webhook is called!")
 
 	node := &v1.Node{}
 	err := n.decoder.Decode(req, node)
 	if err != nil {
-		nodelog.Error(err, "Failed to decode node")
+		log.Error(err, "Failed to decode node")
 		return admission.Errored(http.StatusBadRequest, err)
-	}
-
-	if node.Labels == nil {
-		node.Labels = map[string]string{}
 	}
 
 	// get all label rules and apply labels as they match
-	newLabels := &v1beta1.LabelsList{}
-	if err = n.Client.List(context.TODO(), newLabels, &client.ListOptions{}); err != nil {
-		nodelog.Error(err, "Failed to list Labels")
+	allLabels := &v1beta1.LabelsList{}
+	if err = n.Client.List(context.TODO(), allLabels, &client.ListOptions{}); err != nil {
+		log.Error(err, "Failed to list Labels")
 		return admission.Errored(http.StatusBadRequest, err)
 	}
-	for _, newLabel := range newLabels.Items {
 
-		if newLabel.GetDeletionTimestamp() != nil {
-			continue
-		}
+	nodeModified := pkg.AddAllLabels(node, allLabels.Items, log)
 
-		for _, rule := range newLabel.Spec.Rules {
-			for _, nodeNamePattern := range rule.NodeNamePatterns {
-				pattern := fmt.Sprintf("%s%s%s", "^", nodeNamePattern, "$")
-				match, err := regexp.MatchString(pattern, node.Name)
-				if err != nil {
-					nodelog.Error(err, "invalid regular expression, moving on to next node name / rule")
-					continue
-				}
-				if !match {
-					continue
-				}
-				// we have a match, add labels!
-				for _, label := range rule.Labels {
-					// split to domain/name and value
-					parts := strings.Split(label, "=")
-					if len(parts) != 2 {
-						nodelog.Info("invalid label, less or more than one \"=\", moving on to next label / rule", "label", label)
-						continue
-					}
-					if val, ok := node.Labels[parts[0]]; !ok || val != parts[1] {
-						nodelog.Info("adding label to node based on pattern", "label", label, "nodeName", node.Name, "pattern", nodeNamePattern)
-						node.Labels[parts[0]] = parts[1]
-					}
-				}
-			}
+	if nodeModified {
+		marshaledNode, err := json.Marshal(node)
+		if err != nil {
+			log.Error(err, "marshalling response went wrong")
+			return admission.Errored(http.StatusInternalServerError, err)
 		}
-	}
-	marshaledNode, err := json.Marshal(node)
-	if err != nil {
-		nodelog.Error(err, "marshalling response went wrong")
-		return admission.Errored(http.StatusInternalServerError, err)
+		return admission.PatchResponseFromRaw(req.Object.Raw, marshaledNode)
 	}
 
-	return admission.PatchResponseFromRaw(req.Object.Raw, marshaledNode)
+	return admission.Allowed("no label added")
 }
 
 // InjectDecoder injects the decoder.
